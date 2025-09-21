@@ -30,6 +30,19 @@ def preprocess_image(img):
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
 
+def update_preview():
+    frame = picam2.capture_array()
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # Resize preview to 320x480
+    frame_resized = cv2.resize(frame_rgb, (320, 480))
+
+    img = Image.fromarray(frame_resized)
+    imgtk = ImageTk.PhotoImage(image=img)
+    label_preview.imgtk = imgtk
+    label_preview.configure(image=imgtk)
+    label_preview.after(30, update_preview)  # Refresh ~30fps
+
 def capture_and_grade():
     frame = picam2.capture_array()  # Take picture
     processed = preprocess_image(frame)
@@ -54,8 +67,12 @@ def capture_and_grade():
 root = tk.Tk()
 root.title("Mango Grader")
 
-label_instr = tk.Label(root, text="Press Capture to grade a mango", font=("Arial", 14))
+label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 14))
 label_instr.pack(pady=10)
+
+# Live camera preview
+label_preview = tk.Label(root)
+label_preview.pack()
 
 btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 14))
 btn_capture.pack(pady=10)
@@ -65,5 +82,8 @@ label_result.pack(pady=10)
 
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 14))
 btn_exit.pack(pady=10)
+
+# Start updating camera preview
+update_preview()
 
 root.mainloop()
