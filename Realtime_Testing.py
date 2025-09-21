@@ -7,7 +7,7 @@ import tflite_runtime.interpreter as tflite
 from picamera2 import Picamera2
 
 # --- Config ---
-MODEL_PATH = "Mobilenetv2.tflite"
+MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
 
