@@ -73,20 +73,25 @@ def capture_and_grade():
 root = tk.Tk()
 root.title("Mango Grader")
 
-label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 14))
-label_instr.pack(pady=10)
+# Force window size to fit TFT
+root.geometry("480x320")  
 
+label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 12))
+label_instr.pack(pady=5)
+
+# Live camera preview
 label_preview = tk.Label(root)
 label_preview.pack()
 
-btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 14))
-btn_capture.pack(pady=10)
+# Make sure button is visible
+btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12), height=2, width=10)
+btn_capture.pack(pady=5)
 
-label_result = tk.Label(root, text="", font=("Arial", 14))
-label_result.pack(pady=10)
+label_result = tk.Label(root, text="", font=("Arial", 12))
+label_result.pack(pady=5)
 
-btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 14))
-btn_exit.pack(pady=10)
+btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12), height=2, width=10)
+btn_exit.pack(pady=5)
 
 # Start preview
 update_preview()
