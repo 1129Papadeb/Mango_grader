@@ -1,35 +1,24 @@
 import tkinter as tk
-from tkinter import messagebox
 import numpy as np
 import cv2
 from PIL import Image, ImageTk
 import tflite_runtime.interpreter as tflite
-from picamera import PiCamera
-import time
-import io
 
 # --- Config ---
 MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
+
 # Load TFLite model
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# Setup Legacy PiCamera
-camera = PiCamera()
-camera.resolution = (640, 480)
+# Setup Legacy Camera (cv2)
+cap = cv2.VideoCapture(0)
 
-def capture_frame():
-    """Capture one frame as numpy array from PiCamera."""
-    stream = io.BytesIO()
-    camera.capture(stream, format="jpeg")
-    data = np.frombuffer(stream.getvalue(), dtype=np.uint8)
-    img = cv2.imdecode(data, 1)
-    return img
-
+# --- Functions ---
 def preprocess_image(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
@@ -38,20 +27,31 @@ def preprocess_image(img):
     return img_expanded
 
 def update_preview():
-    frame = capture_frame()
+    """ Continuously update live preview """
+    ret, frame = cap.read()
+    if not ret:
+        return
+    
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    # Resize preview to fit TFT (480x240)
-    frame_resized = cv2.resize(frame_rgb, (480, 240))
+    frame_resized = cv2.resize(frame_rgb, (480, 180))
 
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.after(30, update_preview)  # Refresh ~30fps
+
+    if live_preview_running:
+        label_preview.after(30, update_preview)
 
 def capture_and_grade():
-    frame = capture_frame()
+    """ Capture image, run grading, show result """
+    global live_preview_running
+    live_preview_running = False  # stop live feed
+
+    ret, frame = cap.read()
+    if not ret:
+        return
+
     processed = preprocess_image(frame)
 
     # Run inference
@@ -62,39 +62,70 @@ def capture_and_grade():
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
 
+    # Add grading text on image
+    frame_out = frame.copy()
+    cv2.putText(frame_out,
+                f"{CLASS_NAMES[predicted_index]} ({confidence:.2f})",
+                (30, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                1, (255, 0, 0), 2)
+
+    # Show output on TFT
+    frame_rgb = cv2.cvtColor(frame_out, cv2.COLOR_BGR2RGB)
+    frame_resized = cv2.resize(frame_rgb, (480, 180))
+    img = Image.fromarray(frame_resized)
+    imgtk = ImageTk.PhotoImage(image=img)
+    label_preview.imgtk = imgtk
+    label_preview.configure(image=imgtk)
+
+    # Show result text
     result = f"Prediction: {CLASS_NAMES[predicted_index]} ({confidence:.2f})"
     label_result.config(text=result)
 
-    again = messagebox.askyesno("Continue?", "Do you want to capture another mango?")
-    if not again:
-        root.quit()
+    # Switch buttons
+    btn_capture.place_forget()
+    btn_again.place(x=150, y=220, width=180, height=40)
 
-# --- UI ---
+def reset_preview():
+    """ Return to live preview """
+    global live_preview_running
+    live_preview_running = True
+    btn_again.place_forget()
+    btn_capture.place(x=150, y=220, width=180, height=40)
+    update_preview()
+
+# --- UI Setup ---
 root = tk.Tk()
 root.title("Mango Grader")
 root.geometry("480x320")  # TFT resolution
 
-# Instruction text
 label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 10))
 label_instr.place(x=10, y=5)
 
-# Camera preview (smaller so buttons fit)
+# Preview area
 label_preview = tk.Label(root)
 label_preview.place(x=0, y=30, width=480, height=180)
 
-# Capture button (move higher)
+# Capture button
 btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 12))
 btn_capture.place(x=150, y=220, width=180, height=40)
 
-# Result label (just above exit button)
+# Capture Again button (hidden initially)
+btn_again = tk.Button(root, text="🔄 Capture Again", command=reset_preview, font=("Arial", 12))
+
+# Result label
 label_result = tk.Label(root, text="", font=("Arial", 12))
 label_result.place(x=10, y=270)
 
-# Exit button (bottom-right corner, small)
+# Exit button
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
 btn_exit.place(x=400, y=270, width=70, height=30)
 
-
-# Start preview
+# Start live preview
+live_preview_running = True
 update_preview()
+
 root.mainloop()
+
+# Release camera when closing
+cap.release()
+cv2.destroyAllWindows()
