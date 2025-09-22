@@ -21,19 +21,19 @@ cap = cv2.VideoCapture(0)
 # --- Functions ---
 def preprocess_image(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+    img_resized = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH))
     img_normalized = img_resized.astype("float32") / 255.0
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
 
 def update_preview():
-    """ Continuously update live preview """
+    """ Continuously update full-screen live preview """
     ret, frame = cap.read()
     if not ret:
         return
     
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (480, 180))
+    frame_resized = cv2.resize(frame_rgb, (480, 240))  # big preview
 
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
@@ -44,7 +44,7 @@ def update_preview():
         label_preview.after(30, update_preview)
 
 def capture_and_grade():
-    """ Capture image, run grading, show result """
+    """ Capture image, stop preview, and show split screen result """
     global live_preview_running
     live_preview_running = False  # stop live feed
 
@@ -62,35 +62,39 @@ def capture_and_grade():
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
 
-    # Add grading text on image
-    frame_out = frame.copy()
-    cv2.putText(frame_out,
-                f"{CLASS_NAMES[predicted_index]} ({confidence:.2f})",
-                (30, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                1, (255, 0, 0), 2)
-
-    # Show output on TFT
-    frame_rgb = cv2.cvtColor(frame_out, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (480, 180))
+    # Left side: captured mango image
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame_resized = cv2.resize(frame_rgb, (240, 240))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
+    label_preview.place(x=0, y=20, width=240, height=240)
 
-    # Show result text
-    result = f"Prediction: {CLASS_NAMES[predicted_index]} ({confidence:.2f})"
-    label_result.config(text=result)
+    # Right side: grading text
+    result_text = f"Prediction:\n{CLASS_NAMES[predicted_index]}\n\nConfidence:\n{confidence:.2f}"
+    label_result.config(text=result_text, font=("Arial", 12))
+    label_result.place(x=240, y=20, width=240, height=240)
 
     # Switch buttons
     btn_capture.place_forget()
-    btn_again.place(x=150, y=220, width=180, height=40)
+    btn_again.place(x=100, y=280, width=120, height=30)
 
 def reset_preview():
-    """ Return to live preview """
+    """ Return to full live preview mode """
     global live_preview_running
     live_preview_running = True
+
+    # Expand preview back to full width
+    label_preview.place(x=0, y=20, width=480, height=240)
+
+    # Clear text on right side
+    label_result.config(text="")
+
+    # Switch buttons
     btn_again.place_forget()
-    btn_capture.place(x=150, y=220, width=180, height=40)
+    btn_capture.place(x=100, y=280, width=120, height=30)
+
     update_preview()
 
 # --- UI Setup ---
@@ -98,27 +102,23 @@ root = tk.Tk()
 root.title("Mango Grader")
 root.geometry("480x320")  # TFT resolution
 
-label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 10))
-label_instr.place(x=10, y=5)
+# Big preview label
+label_preview = tk.Label(root, bg="black")
+label_preview.place(x=0, y=20, width=480, height=240)
 
-# Preview area
-label_preview = tk.Label(root)
-label_preview.place(x=0, y=30, width=480, height=180)
+# Right-side result label (hidden during preview)
+label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
 # Capture button
 btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 12))
-btn_capture.place(x=150, y=220, width=180, height=40)
+btn_capture.place(x=100, y=280, width=120, height=30)
 
 # Capture Again button (hidden initially)
 btn_again = tk.Button(root, text="🔄 Capture Again", command=reset_preview, font=("Arial", 12))
 
-# Result label
-label_result = tk.Label(root, text="", font=("Arial", 12))
-label_result.place(x=10, y=270)
-
 # Exit button
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
-btn_exit.place(x=400, y=270, width=70, height=30)
+btn_exit.place(x=280, y=280, width=120, height=30)
 
 # Start live preview
 live_preview_running = True
