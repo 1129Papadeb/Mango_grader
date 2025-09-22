@@ -41,14 +41,14 @@ def update_preview():
     frame = capture_frame()
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Resize preview to fit TFT (320x480)
-    frame_resized = cv2.resize(frame_rgb, (320, 480))
+    # Resize preview to fit TFT (480x240)
+    frame_resized = cv2.resize(frame_rgb, (480, 240))
 
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.after(100, update_preview)  # slower refresh for SPI TFT
+    label_preview.after(30, update_preview)  # Refresh ~30fps
 
 def capture_and_grade():
     frame = capture_frame()
@@ -72,26 +72,23 @@ def capture_and_grade():
 # --- UI ---
 root = tk.Tk()
 root.title("Mango Grader")
-
-# Force window size to fit TFT
-root.geometry("480x320")  
+root.geometry("480x320")  # Force TFT resolution
 
 label_instr = tk.Label(root, text="Align the mango and press Capture", font=("Arial", 12))
-label_instr.pack(pady=5)
+label_instr.pack(pady=2)
 
 # Live camera preview
 label_preview = tk.Label(root)
 label_preview.pack()
 
-# Make sure button is visible
-btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12), height=2, width=10)
-btn_capture.pack(pady=5)
+btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12))
+btn_capture.pack(pady=2)
 
 label_result = tk.Label(root, text="", font=("Arial", 12))
-label_result.pack(pady=5)
+label_result.pack(pady=2)
 
-btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12), height=2, width=10)
-btn_exit.pack(pady=5)
+btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
+btn_exit.pack(pady=2)
 
 # Start preview
 update_preview()
