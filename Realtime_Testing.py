@@ -27,13 +27,13 @@ def preprocess_image(img):
     return img_expanded
 
 def update_preview():
-    """ Continuously update full-screen live preview """
+    """ Continuously update preview """
     ret, frame = cap.read()
     if not ret:
         return
     
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (480, 240))  # big preview
+    frame_resized = cv2.resize(frame_rgb, (480, 200))  # smaller preview
 
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
@@ -64,68 +64,67 @@ def capture_and_grade():
 
     # Left side: captured mango image
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (240, 240))
+    frame_resized = cv2.resize(frame_rgb, (240, 200))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=240, height=240)
+    label_preview.place(x=0, y=20, width=240, height=200)
 
     # Right side: grading text
     result_text = f"Prediction:\n{CLASS_NAMES[predicted_index]}\n\nConfidence:\n{confidence:.2f}"
     label_result.config(text=result_text, font=("Arial", 12))
-    label_result.place(x=240, y=20, width=240, height=240)
+    label_result.place(x=240, y=20, width=240, height=200)
 
     # Switch buttons
     btn_capture.place_forget()
-    btn_again.place(x=100, y=280, width=120, height=30)
+    btn_again.place(x=80, y=240, width=150, height=30)
+    btn_exit.place(x=260, y=240, width=120, height=30)
 
 def reset_preview():
-    """ Return to full live preview mode """
+    """ Return to preview mode """
     global live_preview_running
     live_preview_running = True
 
-    # Expand preview back to full width
-    label_preview.place(x=0, y=20, width=480, height=240)
+    # Expand preview again
+    label_preview.place(x=0, y=20, width=480, height=200)
 
     # Clear text on right side
     label_result.config(text="")
 
     # Switch buttons
     btn_again.place_forget()
-    btn_capture.place(x=100, y=280, width=120, height=30)
+    btn_capture.place(x=80, y=240, width=150, height=30)
+    btn_exit.place(x=260, y=240, width=120, height=30)
 
     update_preview()
 
 # --- UI Setup ---
 root = tk.Tk()
 root.title("Mango Grader")
-root.geometry("480x320")  # TFT resolution
+root.geometry("480x320")  # TFT screen
 
-# Big preview label
+# Preview
 label_preview = tk.Label(root, bg="black")
-label_preview.place(x=0, y=20, width=480, height=240)
+label_preview.place(x=0, y=20, width=480, height=200)
 
-# Right-side result label (hidden during preview)
+# Right-side result (hidden during preview)
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
-# Capture button
+# Buttons
 btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 12))
-btn_capture.place(x=100, y=280, width=120, height=30)
+btn_capture.place(x=80, y=240, width=150, height=30)
 
-# Capture Again button (hidden initially)
 btn_again = tk.Button(root, text="🔄 Capture Again", command=reset_preview, font=("Arial", 12))
 
-# Exit button
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
-btn_exit.place(x=280, y=280, width=120, height=30)
+btn_exit.place(x=260, y=240, width=120, height=30)
 
-# Start live preview
+# Start preview
 live_preview_running = True
 update_preview()
 
 root.mainloop()
 
-# Release camera when closing
 cap.release()
 cv2.destroyAllWindows()
