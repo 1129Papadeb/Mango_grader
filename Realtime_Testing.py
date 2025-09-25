@@ -18,7 +18,25 @@ output_details = interpreter.get_output_details()
 # Setup Legacy Camera (cv2)
 cap = cv2.VideoCapture(0)
 
+# --- Global Zoom ---
+zoom_factor = 1.0  # default no zoom
+
 # --- Functions ---
+def zoom_frame(frame, zoom_factor=1.0):
+    """ Apply digital zoom by cropping and resizing """
+    if zoom_factor == 1.0:
+        return frame  # no zoom
+    
+    h, w, _ = frame.shape
+    # Calculate cropping box
+    new_w, new_h = int(w / zoom_factor), int(h / zoom_factor)
+    x1 = (w - new_w) // 2
+    y1 = (h - new_h) // 2
+    x2, y2 = x1 + new_w, y1 + new_h
+
+    cropped = frame[y1:y2, x1:x2]
+    return cv2.resize(cropped, (w, h))
+
 def preprocess_image(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH))
@@ -31,7 +49,10 @@ def update_preview():
     ret, frame = cap.read()
     if not ret:
         return
-    
+
+    # Apply zoom
+    frame = zoom_frame(frame, zoom_factor)
+
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (480, 200))  # smaller preview
 
@@ -51,6 +72,9 @@ def capture_and_grade():
     ret, frame = cap.read()
     if not ret:
         return
+
+    # Apply zoom before processing
+    frame = zoom_frame(frame, zoom_factor)
 
     processed = preprocess_image(frame)
 
@@ -99,6 +123,15 @@ def reset_preview():
 
     update_preview()
 
+# --- Zoom Controls ---
+def zoom_in():
+    global zoom_factor
+    zoom_factor = min(zoom_factor + 0.2, 3.0)  # max 3x zoom
+
+def zoom_out():
+    global zoom_factor
+    zoom_factor = max(zoom_factor - 0.2, 1.0)  # min normal
+
 # --- UI Setup ---
 root = tk.Tk()
 root.title("Mango Grader")
@@ -119,6 +152,13 @@ btn_again = tk.Button(root, text="🔄 Capture Again", command=reset_preview, fo
 
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
 btn_exit.place(x=260, y=240, width=120, height=30)
+
+# Zoom buttons
+btn_zoom_in = tk.Button(root, text="➕ Zoom In", command=zoom_in, font=("Arial", 10))
+btn_zoom_in.place(x=10, y=280, width=100, height=30)
+
+btn_zoom_out = tk.Button(root, text="➖ Zoom Out", command=zoom_out, font=("Arial", 10))
+btn_zoom_out.place(x=120, y=280, width=100, height=30)
 
 # Start preview
 live_preview_running = True
