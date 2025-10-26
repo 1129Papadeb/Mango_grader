@@ -72,10 +72,11 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    # Rotate frame 90 degrees counter-clockwise for natural orientation
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-    # Optional flip if needed
-    # frame = cv2.flip(frame, 1)
+    # Remove horizontal flip for correct left-right mapping
+    # frame = cv2.flip(frame, 1)  # Commented out
 
     h, w, _ = frame.shape
     new_w = 480
@@ -99,10 +100,11 @@ def capture_and_grade():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    # Rotate frame 90 degrees counter-clockwise for natural orientation
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-    # Optional flip if needed
-    # frame = cv2.flip(frame, 1)
+    # Remove horizontal flip for correct left-right mapping
+    # frame = cv2.flip(frame, 1)  # Commented out
 
     processed = preprocess_image(frame)
     interpreter.set_tensor(input_details[0]['index'], processed)
@@ -194,4 +196,3 @@ root.mainloop()
 
 cap.release()
 cv2.destroyAllWindows()
-
