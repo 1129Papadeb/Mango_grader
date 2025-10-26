@@ -94,16 +94,12 @@ def capture_and_grade():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 90 degrees clockwise for landscape
-    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-
+    # Rotate frame 180 degrees clockwise for landscape
+    frame = cv2.rotate(frame, cv2.ROTATE_180)
     processed = preprocess_image(frame)
     interpreter.set_tensor(input_details[0]['index'], processed)
     interpreter.invoke()
     predictions = interpreter.get_tensor(output_details[0]['index'])[0]
-
-    # Reduce Class 3 confidence artificially by 0.6 to decrease Class3 predictions
-    predictions[2] = predictions[2] * 0.6
 
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
