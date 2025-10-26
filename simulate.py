@@ -10,8 +10,8 @@ MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
 CLASS_WEIGHT_RANGES = {
-    "Class1": (221, 350),
-    "Class2": (200, 220),
+    "Class1": (221, 280),
+    "Class2": (181, 220),
     "Class3": (120, 180)
 }
 
@@ -95,7 +95,8 @@ def capture_and_grade():
     interpreter.invoke()
     predictions = interpreter.get_tensor(output_details[0]['index'])[0]
 
-    predictions[2] = predictions[2] * 0.3
+    # Reduce Class 3 confidence artificially by 0.6 to decrease Class3 predictions
+    predictions[2] = predictions[2] * 0.6
 
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
