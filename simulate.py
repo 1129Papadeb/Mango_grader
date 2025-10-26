@@ -52,17 +52,11 @@ def enhance_lighting(img):
 
 
 def preprocess_image(img):
-    # Apply lighting enhancement for better contrast
     img = enhance_lighting(img)
-    # Convert BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # Resize to model input size
     img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
-    # Convert to float32 and normalize to [0,1]
     img_normalized = img_resized.astype('float32') / 255.0
-    # MobileNetV2 normalization to [-1,1]
     img_normalized = (img_normalized - 0.5) * 2.0
-    # Add batch dimension
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
 
@@ -78,18 +72,16 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 90 degrees clockwise for landscape
     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    # Optional: Flip horizontally to correct facing direction (uncomment if needed)
+    # Optional flip if needed
     # frame = cv2.flip(frame, 1)
 
-    # Maintain aspect ratio: resize width = 480, calc height
     h, w, _ = frame.shape
     new_w = 480
     new_h = int(h / w * new_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
+    frame_resized = cv2.resize(frame_rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
@@ -107,10 +99,9 @@ def capture_and_grade():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 90 degrees clockwise for landscape
     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    # Optional: Flip horizontally to correct facing direction (uncomment if needed)
+    # Optional flip if needed
     # frame = cv2.flip(frame, 1)
 
     processed = preprocess_image(frame)
@@ -123,12 +114,11 @@ def capture_and_grade():
     predicted_class = CLASS_NAMES[predicted_index]
     random_weight = get_random_weight(predicted_class)
 
-    # Resize captured frame maintaining aspect ratio with preview width 240
     h, w, _ = frame.shape
-    preview_w = 240
+    preview_w = 480  # Match live preview width
     preview_h = int(h / w * preview_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
+    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h), interpolation=cv2.INTER_AREA)
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
@@ -176,11 +166,10 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
-# Window width fixed at 480, height dynamic based on preview + controls
 root.geometry("480x300")
 
 label_preview = tk.Label(root, bg="black")
-label_preview.place(x=0, y=20, width=480, height=180)  # Initial size, updated by update_preview()
+label_preview.place(x=0, y=20, width=480, height=180)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
@@ -205,3 +194,4 @@ root.mainloop()
 
 cap.release()
 cv2.destroyAllWindows()
+
