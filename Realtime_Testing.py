@@ -4,10 +4,17 @@ import cv2
 from PIL import Image, ImageTk
 import tflite_runtime.interpreter as tflite
 
+
 # --- Config ---
 MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
+CLASS_WEIGHTS = {
+    "Class1": "250-350g",
+    "Class2": "200-250g",
+    "Class3": "150-200g"
+}
+
 
 # Load TFLite model
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
@@ -15,18 +22,21 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
+
 # Setup Legacy Camera (cv2)
 cap = cv2.VideoCapture(0)
 
+
 # --- Global Zoom ---
 zoom_factor = 1.0  # default no zoom
+
 
 # --- Functions ---
 def zoom_frame(frame, zoom_factor=1.0):
     """ Apply digital zoom by cropping and resizing """
     if zoom_factor == 1.0:
         return frame  # no zoom
-    
+
     h, w, _ = frame.shape
     # Calculate cropping box
     new_w, new_h = int(w / zoom_factor), int(h / zoom_factor)
@@ -37,12 +47,14 @@ def zoom_frame(frame, zoom_factor=1.0):
     cropped = frame[y1:y2, x1:x2]
     return cv2.resize(cropped, (w, h))
 
+
 def preprocess_image(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH))
     img_normalized = img_resized.astype("float32") / 255.0
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
+
 
 def update_preview():
     """ Continuously update preview """
@@ -64,6 +76,7 @@ def update_preview():
     if live_preview_running:
         label_preview.after(30, update_preview)
 
+
 def capture_and_grade():
     """ Capture image, stop preview, and show split screen result """
     global live_preview_running
@@ -78,7 +91,7 @@ def capture_and_grade():
 
     processed = preprocess_image(frame)
 
-    # Run inference
+    # Run inference on TFLite model
     interpreter.set_tensor(input_details[0]['index'], processed)
     interpreter.invoke()
     predictions = interpreter.get_tensor(output_details[0]['index'])[0]
@@ -86,7 +99,7 @@ def capture_and_grade():
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
 
-    # Left side: captured mango image
+    # Left side: captured mango image preview
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (240, 200))
     img = Image.fromarray(frame_resized)
@@ -95,8 +108,10 @@ def capture_and_grade():
     label_preview.configure(image=imgtk)
     label_preview.place(x=0, y=20, width=240, height=200)
 
-    # Right side: grading text
-    result_text = f"Prediction:\n{CLASS_NAMES[predicted_index]}\n\nConfidence:\n{confidence:.2f}"
+    # Right side: grading text including weight
+    result_text = (f"Prediction:\n{CLASS_NAMES[predicted_index]}\n\n"
+                   f"Weight:\n{CLASS_WEIGHTS[CLASS_NAMES[predicted_index]]}\n\n"
+                   f"Confidence:\n{confidence:.2f}")
     label_result.config(text=result_text, font=("Arial", 12))
     label_result.place(x=240, y=20, width=240, height=200)
 
@@ -104,6 +119,7 @@ def capture_and_grade():
     btn_capture.place_forget()
     btn_again.place(x=80, y=240, width=150, height=30)
     btn_exit.place(x=260, y=240, width=120, height=30)
+
 
 def reset_preview():
     """ Return to preview mode """
@@ -123,14 +139,17 @@ def reset_preview():
 
     update_preview()
 
+
 # --- Zoom Controls ---
 def zoom_in():
     global zoom_factor
     zoom_factor = min(zoom_factor + 0.2, 3.0)  # max 3x zoom
 
+
 def zoom_out():
     global zoom_factor
     zoom_factor = max(zoom_factor - 0.2, 1.0)  # min normal
+
 
 # --- UI Setup ---
 root = tk.Tk()
