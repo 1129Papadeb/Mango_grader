@@ -31,6 +31,7 @@ cap = cv2.VideoCapture(0)
 # --- Global Zoom ---
 zoom_factor = 1.0  # default no zoom
 
+
 def zoom_frame(frame, zoom_factor=1.0):
     if zoom_factor == 1.0:
         return frame
@@ -62,10 +63,10 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
-    new_w = 480
-    new_h = int(h / w * new_w)
+    # Fix height, calculate width preserving aspect ratio for landscape preview
+    new_h = 270
+    new_w = int(w / h * new_h)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
     img = Image.fromarray(frame_resized)
@@ -93,10 +94,10 @@ def capture_and_grade():
     predicted_class = CLASS_NAMES[predicted_index]
     random_weight = get_random_weight(predicted_class)
 
-    # Resize captured frame maintaining aspect ratio with preview width 160
+    # Resize captured frame maintaining aspect ratio with preview width 240
     h, w, _ = frame.shape
-    preview_w = 160
-    preview_h = int(w / h * preview_h)
+    preview_w = 240
+    preview_h = int(h / w * preview_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
     img = Image.fromarray(frame_resized)
