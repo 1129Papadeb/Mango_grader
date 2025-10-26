@@ -143,7 +143,7 @@ def capture_and_grade():
                    f"Weight:\n{random_weight:.1f} g\n\n"
                    f"Confidence:\n{confidence:.2f}")
     label_result.config(text=result_text, font=("Arial", 12))
-    label_result.place(x=300, y=20, width=180, height=target_h)
+    label_result.place(x=200, y=20, width=180, height=target_h)
 
     btn_capture.place_forget()
     btn_again.place(x=20, y=220, width=100, height=40)
