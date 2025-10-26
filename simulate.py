@@ -69,6 +69,9 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
+    # Rotate frame 90 degrees clockwise for landscape
+    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
     # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
     new_w = 480
@@ -90,6 +93,10 @@ def capture_and_grade():
     if not ret:
         return
     frame = zoom_frame(frame, zoom_factor)
+
+    # Rotate frame 90 degrees clockwise for landscape
+    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
     processed = preprocess_image(frame)
     interpreter.set_tensor(input_details[0]['index'], processed)
     interpreter.invoke()
