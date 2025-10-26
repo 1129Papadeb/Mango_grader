@@ -65,7 +65,7 @@ def update_preview():
     # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
     new_w = 480
-    new_h = int(w / h * new_h)
+    new_h = int(h / w * new_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
     img = Image.fromarray(frame_resized)
@@ -93,10 +93,10 @@ def capture_and_grade():
     predicted_class = CLASS_NAMES[predicted_index]
     random_weight = get_random_weight(predicted_class)
 
-    # Resize captured frame maintaining aspect ratio with preview width 240
+    # Resize captured frame maintaining aspect ratio with preview width 160
     h, w, _ = frame.shape
     preview_w = 160
-    preview_h = int(h / w * preview_w)
+    preview_h = int(w / h * preview_h)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
     img = Image.fromarray(frame_resized)
