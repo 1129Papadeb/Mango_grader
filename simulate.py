@@ -69,8 +69,8 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 180 degrees clockwise for landscape
-    frame = cv2.rotate(frame, cv2.ROTATE_180)
+    # Rotate frame 90 degrees counter-clockwise for landscape
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
