@@ -5,7 +5,6 @@ from PIL import Image, ImageTk
 import tflite_runtime.interpreter as tflite
 import random
 
-
 # --- Config ---
 MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
@@ -16,17 +15,14 @@ CLASS_WEIGHT_RANGES = {
     "Class3": (120, 180)
 }
 
-
 # Load TFLite model
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-
 # Setup Legacy Camera (cv2)
 cap = cv2.VideoCapture(0)
-
 
 # --- Global Zoom ---
 zoom_factor = 1.0  # default no zoom
@@ -42,19 +38,30 @@ def zoom_frame(frame, zoom_factor=1.0):
     cropped = frame[y1:y2, x1:x2]
     return cv2.resize(cropped, (w, h))
 
+def enhance_lighting(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+    return img_output
 
 def preprocess_image(img):
+    # Apply lighting enhancement for better contrast
+    img = enhance_lighting(img)
+    # Convert BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_resized = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH))
-    img_normalized = img_resized.astype("float32") / 255.0
+    # Resize to model input size
+    img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+    # Convert to float32 and normalize to [0,1]
+    img_normalized = img_resized.astype('float32') / 255.0
+    # MobileNetV2 normalization to [-1,1]
+    img_normalized = (img_normalized - 0.5) * 2.0
+    # Add batch dimension
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
-
 
 def get_random_weight(class_name):
     low, high = CLASS_WEIGHT_RANGES[class_name]
     return random.uniform(low, high)
-
 
 def update_preview():
     ret, frame = cap.read()
@@ -75,7 +82,6 @@ def update_preview():
     label_preview.place(x=0, y=20, width=new_w, height=new_h)
     if live_preview_running:
         label_preview.after(30, update_preview)
-
 
 def capture_and_grade():
     global live_preview_running
@@ -117,7 +123,6 @@ def capture_and_grade():
     btn_zoom_in.place(x=280, y=220, width=80, height=40)
     btn_zoom_out.place(x=380, y=220, width=80, height=40)
 
-
 def reset_preview():
     global live_preview_running
     live_preview_running = True
@@ -129,18 +134,15 @@ def reset_preview():
     btn_zoom_out.place(x=380, y=220, width=80, height=40)
     update_preview()
 
-
 def zoom_in():
     global zoom_factor
     zoom_factor = min(zoom_factor + 0.2, 3.0)
     update_preview()
 
-
 def zoom_out():
     global zoom_factor
     zoom_factor = max(zoom_factor - 0.2, 1.0)
     update_preview()
-
 
 # --- UI Setup ---
 root = tk.Tk()
