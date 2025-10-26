@@ -10,9 +10,9 @@ MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
 CLASS_WEIGHT_RANGES = {
-    "Class1": (250, 350),
-    "Class2": (200, 250),
-    "Class3": (150, 200)
+    "Class1": (221, 280),
+    "Class2": (181, 220),
+    "Class3": (120, 180)
 }
 
 # Load TFLite model
@@ -85,13 +85,13 @@ def capture_and_grade():
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=240, height=180)
+    label_preview.place(x=0, y=20, width=480, height=180)
 
     result_text = (f"Prediction:\n{predicted_class}\n\n"
                    f"Weight:\n{random_weight:.1f} g\n\n"
                    f"Confidence:\n{confidence:.2f}")
     label_result.config(text=result_text, font=("Arial", 12))
-    label_result.place(x=240, y=20, width=240, height=180)
+    label_result.place(x=300, y=20, width=240, height=180)
 
     btn_capture.place_forget()
     btn_again.place(x=20, y=220, width=100, height=40)
@@ -129,10 +129,10 @@ label_preview.place(x=0, y=20, width=480, height=180)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
-btn_capture = tk.Button(root, text="📸 Capture", command=capture_and_grade, font=("Arial", 12))
+btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12))
 btn_capture.place(x=20, y=220, width=100, height=40)
 
-btn_again = tk.Button(root, text="🔄 Capture Again", command=reset_preview, font=("Arial", 12))
+btn_again = tk.Button(root, text="Capture", command=reset_preview, font=("Arial", 12))
 
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
 btn_exit.place(x=140, y=220, width=100, height=40)
