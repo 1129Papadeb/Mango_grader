@@ -65,7 +65,7 @@ def update_preview():
     # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
     new_w = 480
-    new_h = int(h / w * new_w)
+    new_h = int(w / h * new_h)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
     img = Image.fromarray(frame_resized)
