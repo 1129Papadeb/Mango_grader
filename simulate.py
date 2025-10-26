@@ -11,8 +11,8 @@ MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
 CLASS_NAMES = ["Class1", "Class2", "Class3"]
 CLASS_WEIGHT_RANGES = {
-    "Class1": (251, 350),
-    "Class2": (211, 250),
+    "Class1": (281, 380),
+    "Class2": (210, 280),
     "Class3": (120, 180)
 }
 
@@ -31,7 +31,6 @@ cap = cv2.VideoCapture(0)
 # --- Global Zoom ---
 zoom_factor = 1.0  # default no zoom
 
-
 def zoom_frame(frame, zoom_factor=1.0):
     if zoom_factor == 1.0:
         return frame
@@ -44,19 +43,10 @@ def zoom_frame(frame, zoom_factor=1.0):
     return cv2.resize(cropped, (w, h))
 
 
-def enhance_lighting(img):
-    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-    return img_output
-
-
 def preprocess_image(img):
-    img = enhance_lighting(img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
-    img_normalized = img_resized.astype('float32') / 255.0
-    img_normalized = (img_normalized - 0.5) * 2.0
+    img_resized = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH))
+    img_normalized = img_resized.astype("float32") / 255.0
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
 
@@ -72,17 +62,12 @@ def update_preview():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 90 degrees counter-clockwise for natural orientation
-    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-    # Remove horizontal flip for correct left-right mapping
-    # frame = cv2.flip(frame, 1)  # Commented out
-
+    # Maintain aspect ratio: resize width = 480, calculate height based on frame's aspect ratio
     h, w, _ = frame.shape
     new_w = 480
     new_h = int(h / w * new_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
@@ -99,28 +84,21 @@ def capture_and_grade():
     if not ret:
         return
     frame = zoom_frame(frame, zoom_factor)
-
-    # Rotate frame 90 degrees counter-clockwise for natural orientation
-    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-    # Remove horizontal flip for correct left-right mapping
-    # frame = cv2.flip(frame, 1)  # Commented out
-
     processed = preprocess_image(frame)
     interpreter.set_tensor(input_details[0]['index'], processed)
     interpreter.invoke()
     predictions = interpreter.get_tensor(output_details[0]['index'])[0]
-
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
     predicted_class = CLASS_NAMES[predicted_index]
     random_weight = get_random_weight(predicted_class)
 
+    # Resize captured frame maintaining aspect ratio with preview width 240
     h, w, _ = frame.shape
-    preview_w = 480  # Match live preview width
+    preview_w = 240
     preview_h = int(h / w * preview_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h), interpolation=cv2.INTER_AREA)
+    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
@@ -168,10 +146,11 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
+# Window width fixed at 480, height will dynamically adjust based on preview height plus controls (estimate 300)
 root.geometry("480x300")
 
 label_preview = tk.Label(root, bg="black")
-label_preview.place(x=0, y=20, width=480, height=180)
+label_preview.place(x=0, y=20, width=480, height=180)  # Initial size, will get updated by update_preview.
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
