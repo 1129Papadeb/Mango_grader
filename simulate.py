@@ -29,16 +29,17 @@ cap = cv2.VideoCapture(0)
 
 
 # --- Global Zoom ---
-zoom_factor = 1.0  # default no zoom
+zoom_factor = 1.0  # Start with no zoom to capture full mango
 
 
 def zoom_frame(frame, zoom_factor=1.0):
+    # Crop center region to simulate zoom
     if zoom_factor == 1.0:
         return frame
     h, w, _ = frame.shape
     new_w, new_h = int(w / zoom_factor), int(h / zoom_factor)
-    x1 = (w - new_w) // 2
-    y1 = (h - new_h) // 2
+    x1 = max((w - new_w) // 2, 0)
+    y1 = max((h - new_h) // 2, 0)
     x2, y2 = x1 + new_w, y1 + new_h
     cropped = frame[y1:y2, x1:x2]
     return cv2.resize(cropped, (w, h))
@@ -52,17 +53,11 @@ def enhance_lighting(img):
 
 
 def preprocess_image(img):
-    # Apply lighting enhancement for better contrast
     img = enhance_lighting(img)
-    # Convert BGR to RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # Resize to model input size
     img_resized = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
-    # Convert to float32 and normalize to [0,1]
     img_normalized = img_resized.astype('float32') / 255.0
-    # MobileNetV2 normalization to [-1,1]
     img_normalized = (img_normalized - 0.5) * 2.0
-    # Add batch dimension
     img_expanded = np.expand_dims(img_normalized, axis=0)
     return img_expanded
 
@@ -78,28 +73,27 @@ def update_preview():
         return
     ret, frame = cap.read()
     if not ret:
-        # If failed to capture frame, retry after delay
         label_preview.after(100, update_preview)
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate frame 90 degrees clockwise for preview orientation
+    # Consistent 90 degrees clockwise rotation for preview
     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    # Resize preview to fixed width 480, height keeping aspect ratio
     h, w, _ = frame.shape
-    new_w = 480
-    new_h = int(h / w * new_w)
+    preview_w = 480
+    preview_h = int(h / w * preview_w)
+
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
+    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
+
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=new_w, height=new_h)
+    label_preview.place(x=0, y=20, width=preview_w, height=preview_h)
 
-    label_result.config(text="")  # Clear result while previewing
-
+    label_result.config(text="")
     label_preview.after(30, update_preview)
 
 
@@ -113,7 +107,7 @@ def capture_and_grade():
         return
     frame = zoom_frame(frame, zoom_factor)
 
-    # Rotate 90 clockwise to keep orientation consistent with preview
+    # Same rotation here as preview for consistency
     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
     processed = preprocess_image(frame)
@@ -126,28 +120,30 @@ def capture_and_grade():
     predicted_class = CLASS_NAMES[predicted_index]
     random_weight = get_random_weight(predicted_class)
 
-    # Resize captured frame to current preview size dynamically
     h, w, _ = frame.shape
     preview_w = label_preview.winfo_width()
     preview_h = label_preview.winfo_height()
+
     aspect_ratio = h / w
-    # Adjust preview height to maintain aspect ratio
-    if preview_h != int(preview_w * aspect_ratio):
-        preview_h = int(preview_w * aspect_ratio)
+    target_h = int(preview_w * aspect_ratio)
+    if target_h > preview_h:
+        target_h = preview_h
+        preview_w = int(preview_h / aspect_ratio)
 
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
+    frame_resized = cv2.resize(frame_rgb, (preview_w, target_h))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
+
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=preview_w, height=preview_h)
+    label_preview.place(x=0, y=20, width=preview_w, height=target_h)
 
     result_text = (f"Prediction:\n{predicted_class}\n\n"
                    f"Weight:\n{random_weight:.1f} g\n\n"
                    f"Confidence:\n{confidence:.2f}")
     label_result.config(text=result_text, font=("Arial", 12))
-    label_result.place(x=300, y=20, width=180, height=preview_h)
+    label_result.place(x=300, y=20, width=180, height=target_h)
 
     btn_capture.place_forget()
     btn_again.place(x=20, y=220, width=100, height=40)
@@ -170,7 +166,8 @@ def reset_preview():
 
 def zoom_in():
     global zoom_factor
-    zoom_factor = min(zoom_factor + 0.2, 3.0)
+    # Limit max zoom to 2.0 to keep mango fully visible
+    zoom_factor = min(zoom_factor + 0.2, 2.0)
     if live_preview_running:
         update_preview()
 
@@ -186,7 +183,6 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
-# Fixed window width 480, height adjusted automatically
 root.geometry("480x300")
 
 label_preview = tk.Label(root, bg="black")
