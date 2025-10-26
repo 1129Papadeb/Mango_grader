@@ -95,7 +95,7 @@ def capture_and_grade():
 
     # Resize captured frame maintaining aspect ratio with preview width 240
     h, w, _ = frame.shape
-    preview_w = 240
+    preview_w = 160
     preview_h = int(h / w * preview_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
