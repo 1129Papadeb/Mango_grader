@@ -94,6 +94,10 @@ def capture_and_grade():
     interpreter.set_tensor(input_details[0]['index'], processed)
     interpreter.invoke()
     predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+
+    # Reduce Class 3 confidence artificially by 0.6 to decrease Class3 predictions
+    predictions[2] = predictions[2] * 0.6
+
     predicted_index = np.argmax(predictions)
     confidence = predictions[predicted_index]
     predicted_class = CLASS_NAMES[predicted_index]
