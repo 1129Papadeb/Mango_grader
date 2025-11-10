@@ -67,20 +67,26 @@ def update_preview():
 def capture_and_grade():
     global live_preview_running
     live_preview_running = False
+    print("Capture started")
     try:
         ret, frame = cap.read()
+        print("Camera capture ret:", ret)
         if not ret:
             raise RuntimeError("Failed to capture image from camera.")
+
         frame = zoom_frame(frame, zoom_factor)
         processed = preprocess_image(frame)
         interpreter.set_tensor(input_details[0]['index'], processed)
         interpreter.invoke()
         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+        print("Raw predictions:", predictions)
         pred_idx = np.argmax(predictions)
         confidence = predictions[pred_idx]
         pred_class = CLASS_NAMES[pred_idx]
+        print(f"Predicted class: {pred_class}, Confidence: {confidence}")
+
         weight = get_random_weight(pred_class)
-        # Resize for display
+
         h, w, _ = frame.shape
         pw = 240
         ph = int(h / w * pw)
@@ -91,14 +97,18 @@ def capture_and_grade():
         label_preview.config(image=photo)
         label_preview.image = photo
         label_preview.place(x=40, y=20, width=pw, height=ph)
-        # Display results fixed y position
+
         result_text = f"Prediction:\n{pred_class}\n\nWeight:\n{weight:.1f} g\n\nConfidence:\n{confidence:.2f}"
         label_result.config(text=result_text, font=("Arial", 12), fg="black")
         label_result.place(x=40, y=400, width=240, height=100)
         label_result.update()
+        print("Result label updated")
+
         btn_capture.pack_forget()
         btn_again.pack(side="left", padx=10)
+
     except Exception as e:
+        print("Exception:", e)
         label_result.config(text=f"Error:\n{str(e)}", font=("Arial", 12), fg="red")
         label_result.place(x=20, y=20, width=280, height=100)
         label_result.update()
@@ -126,7 +136,6 @@ def zoom_out():
     zoom_factor = max(zoom_factor - 0.2, 1.0)
     update_preview()
 
-# UI setup
 root = tk.Tk()
 root.title("Mango Grader")
 root.geometry("320x520")
@@ -135,7 +144,6 @@ label_preview = tk.Label(root, bg="black")
 label_preview.place(x=25, y=20, width=270, height=360)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
-# Initially hidden
 label_result.place(x=40, y=400, width=240, height=100)
 label_result.place_forget()
 
