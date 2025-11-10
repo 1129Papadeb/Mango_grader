@@ -83,18 +83,24 @@ def capture_and_grade():
     live_preview_running = False
     try:
         ret, frame = cap.read()
+        print("Camera capture ret:", ret)
         if not ret or frame is None:
             raise RuntimeError("Failed to capture image from camera.")
 
         frame = zoom_frame(frame, zoom_factor)
         processed = preprocess_image(frame)
 
+        print("Running inference")
         interpreter.set_tensor(input_details[0]['index'], processed)
         interpreter.invoke()
         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+        print("Predictions:", predictions)
+
         predicted_index = np.argmax(predictions)
         confidence = predictions[predicted_index]
         predicted_class = CLASS_NAMES[predicted_index]
+        print("Predicted:", predicted_class, "Confidence:", confidence)
+
         random_weight = get_random_weight(predicted_class)
 
         # Resize captured frame maintaining portrait aspect
@@ -118,6 +124,7 @@ def capture_and_grade():
         btn_capture.pack_forget()
         btn_again.pack(side="left", padx=10)
     except Exception as e:
+        print("Error:", e)
         label_result.config(text=f"Error:\n{str(e)}", font=("Arial", 12), fg="red", justify="center")
         label_result.place(x=20, y=20, width=280, height=100)
         btn_capture.pack(side="left", padx=10)
