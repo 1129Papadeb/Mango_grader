@@ -116,15 +116,15 @@ def capture_and_grade():
         label_result.place(x=40, y=preview_h + 40, width=240, height=100)
 
         btn_capture.place_forget()
-        btn_again.place(x=40, y=420, width=80, height=30)
-        btn_exit.place(x=140, y=420, width=80, height=30)
-        btn_zoom_in.place(x=230, y=420, width=60, height=30)
-        btn_zoom_out.place(x=230, y=460, width=60, height=30)
+        btn_again.place(x=40, y=450, width=80, height=30)
+        btn_exit.place(x=140, y=450, width=80, height=30)
+        btn_zoom_in.place(x=230, y=450, width=60, height=30)
+        btn_zoom_out.place(x=230, y=490, width=60, height=30)
 
     except Exception as e:
         label_result.config(text=f"Error:\n{str(e)}", font=("Arial", 12), fg="red", justify="center")
         label_result.place(x=20, y=20, width=280, height=100)
-        btn_capture.place(x=40, y=420, width=80, height=30)
+        btn_capture.place(x=40, y=450, width=80, height=30)
         btn_again.place_forget()
         live_preview_running = True
         update_preview()
@@ -135,10 +135,10 @@ def reset_preview():
     live_preview_running = True
     label_result.config(text="", fg="black")
     btn_again.place_forget()
-    btn_capture.place(x=40, y=420, width=80, height=30)
-    btn_exit.place(x=140, y=420, width=80, height=30)
-    btn_zoom_in.place(x=230, y=420, width=60, height=30)
-    btn_zoom_out.place(x=230, y=460, width=60, height=30)
+    btn_capture.place(x=40, y=450, width=80, height=30)
+    btn_exit.place(x=140, y=450, width=80, height=30)
+    btn_zoom_in.place(x=230, y=450, width=60, height=30)
+    btn_zoom_out.place(x=230, y=490, width=60, height=30)
     update_preview()
 
 
@@ -158,8 +158,8 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
-# Portrait window geometry
-root.geometry("320x500")
+# Portrait window with extra height for buttons
+root.geometry("320x520")
 
 label_preview = tk.Label(root, bg="black")
 label_preview.place(x=25, y=20, width=270, height=360)
@@ -167,18 +167,18 @@ label_preview.place(x=25, y=20, width=270, height=360)
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
 btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12))
-btn_capture.place(x=40, y=420, width=80, height=30)
+btn_capture.place(x=40, y=450, width=80, height=30)
 
 btn_again = tk.Button(root, text="Capture Again", command=reset_preview, font=("Arial", 12))
 
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
-btn_exit.place(x=140, y=420, width=80, height=30)
+btn_exit.place(x=140, y=450, width=80, height=30)
 
 btn_zoom_in = tk.Button(root, text="➕ Zoom In", command=zoom_in, font=("Arial", 10))
-btn_zoom_in.place(x=230, y=420, width=60, height=30)
+btn_zoom_in.place(x=230, y=450, width=60, height=30)
 
 btn_zoom_out = tk.Button(root, text="➖ Zoom Out", command=zoom_out, font=("Arial", 10))
-btn_zoom_out.place(x=230, y=460, width=60, height=30)
+btn_zoom_out.place(x=230, y=490, width=60, height=30)
 
 live_preview_running = True
 update_preview()
