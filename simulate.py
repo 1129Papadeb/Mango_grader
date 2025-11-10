@@ -9,12 +9,11 @@ import random
 # --- Config ---
 MODEL_PATH = "MobileNetv2.tflite"
 IMG_HEIGHT, IMG_WIDTH = 224, 224
-CLASS_NAMES = ["Class1", "Class2", "Class3", "Uncertain"]
+CLASS_NAMES = ["Class1", "Class2", "Class3"]
 CLASS_WEIGHT_RANGES = {
     "Class1": (281, 380),
     "Class2": (210, 280),
-    "Class3": (120, 180),
-    "Uncertain": (0, 0)  # No weight for uncertain
+    "Class3": (120, 180)
 }
 
 MIN_CONFIDENCE = 0.6  # Minimum confidence threshold for accepting Class3 predictions
@@ -50,8 +49,6 @@ def preprocess_image(img):
 
 def get_random_weight(class_name):
     low, high = CLASS_WEIGHT_RANGES[class_name]
-    if low == 0 and high == 0:
-        return 0.0  # For uncertain class
     return random.uniform(low, high)
 
 
@@ -91,10 +88,11 @@ def capture_and_grade():
     confidence = predictions[predicted_index]
     predicted_class = CLASS_NAMES[predicted_index]
 
-    # Filter Class3 predictions by confidence threshold
+    # Filter Class3 predictions by confidence threshold: downgrade to Class1 if below threshold
     if predicted_class == "Class3" and confidence < MIN_CONFIDENCE:
-        predicted_class = "Uncertain"
-        confidence = 0.0
+        predicted_class = "Class1"  # or "Class2" depending on fallback preference
+        # Optionally, recalculate confidence for fallback class if desired
+        # confidence = predictions[CLASS_NAMES.index(predicted_class)]
 
     random_weight = get_random_weight(predicted_class)
 
@@ -136,14 +134,12 @@ def reset_preview():
 
 
 def zoom_in():
-    # Disable zoom in by setting max zoom_factor to 1.0 (no zoom)
     global zoom_factor
     zoom_factor = 1.0
     update_preview()
 
 
 def zoom_out():
-    # Disable zoom out by setting min zoom_factor to 1.0 (no zoom)
     global zoom_factor
     zoom_factor = 1.0
     update_preview()
@@ -153,11 +149,10 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
-# Window width fixed at 480, height will dynamically adjust based on preview height plus controls (estimate 300)
 root.geometry("480x300")
 
 label_preview = tk.Label(root, bg="black")
-label_preview.place(x=0, y=20, width=480, height=180)  # Initial size, will get updated by update_preview.
+label_preview.place(x=0, y=20, width=480, height=180)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
