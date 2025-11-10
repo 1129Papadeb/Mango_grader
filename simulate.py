@@ -29,19 +29,12 @@ cap = cv2.VideoCapture(0)
 
 
 # --- Global Zoom ---
-zoom_factor = 1.0  # default no zoom
+zoom_factor = 1.0  # fixed no zoom to show widest camera view
 
 
 def zoom_frame(frame, zoom_factor=1.0):
-    if zoom_factor == 1.0:
-        return frame
-    h, w, _ = frame.shape
-    new_w, new_h = int(w / zoom_factor), int(h / zoom_factor)
-    x1 = (w - new_w) // 2
-    y1 = (h - new_h) // 2
-    x2, y2 = x1 + new_w, y1 + new_h
-    cropped = frame[y1:y2, x1:x2]
-    return cv2.resize(cropped, (w, h))
+    # Disable zoom cropping, return original frame
+    return frame
 
 
 def preprocess_image(img):
@@ -132,14 +125,16 @@ def reset_preview():
 
 
 def zoom_in():
+    # Disable zoom in by setting max zoom_factor to 1.0 (no zoom)
     global zoom_factor
-    zoom_factor = min(zoom_factor + 0.2, 3.0)
+    zoom_factor = 1.0
     update_preview()
 
 
 def zoom_out():
+    # Disable zoom out by setting min zoom_factor to 1.0 (no zoom)
     global zoom_factor
-    zoom_factor = max(zoom_factor - 0.2, 1.0)
+    zoom_factor = 1.0
     update_preview()
 
 
