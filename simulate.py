@@ -64,16 +64,16 @@ def update_preview():
     frame = zoom_frame(frame, zoom_factor)
 
     h, w, _ = frame.shape
-    # Fix height, calculate width preserving aspect ratio for landscape preview
-    new_h = 270
-    new_w = int(w / h * new_h)
+    # Portrait preview: fix width and scale height
+    new_w = 270
+    new_h = int(h / w * new_w)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
     img = Image.fromarray(frame_resized)
     imgtk = ImageTk.PhotoImage(image=img)
     label_preview.imgtk = imgtk
     label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=new_w, height=new_h)
+    label_preview.place(x=25, y=20, width=new_w, height=new_h)
     if live_preview_running:
         label_preview.after(30, update_preview)
 
@@ -81,53 +81,64 @@ def update_preview():
 def capture_and_grade():
     global live_preview_running
     live_preview_running = False
-    ret, frame = cap.read()
-    if not ret:
-        return
-    frame = zoom_frame(frame, zoom_factor)
-    processed = preprocess_image(frame)
-    interpreter.set_tensor(input_details[0]['index'], processed)
-    interpreter.invoke()
-    predictions = interpreter.get_tensor(output_details[0]['index'])[0]
-    predicted_index = np.argmax(predictions)
-    confidence = predictions[predicted_index]
-    predicted_class = CLASS_NAMES[predicted_index]
-    random_weight = get_random_weight(predicted_class)
+    try:
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            raise RuntimeError("Failed to capture image from camera.")
 
-    # Resize captured frame maintaining aspect ratio with preview width 240
-    h, w, _ = frame.shape
-    preview_w = 240
-    preview_h = int(h / w * preview_w)
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
-    img = Image.fromarray(frame_resized)
-    imgtk = ImageTk.PhotoImage(image=img)
-    label_preview.imgtk = imgtk
-    label_preview.configure(image=imgtk)
-    label_preview.place(x=0, y=20, width=preview_w, height=preview_h)
+        frame = zoom_frame(frame, zoom_factor)
+        processed = preprocess_image(frame)
 
-    result_text = (f"Prediction:\n{predicted_class}\n\n"
-                   f"Weight:\n{random_weight:.1f} g\n\n"
-                   f"Confidence:\n{confidence:.2f}")
-    label_result.config(text=result_text, font=("Arial", 12))
-    label_result.place(x=300, y=20, width=180, height=preview_h)
+        interpreter.set_tensor(input_details[0]['index'], processed)
+        interpreter.invoke()
+        predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+        predicted_index = np.argmax(predictions)
+        confidence = predictions[predicted_index]
+        predicted_class = CLASS_NAMES[predicted_index]
+        random_weight = get_random_weight(predicted_class)
 
-    btn_capture.place_forget()
-    btn_again.place(x=20, y=220, width=100, height=40)
-    btn_exit.place(x=140, y=220, width=100, height=40)
-    btn_zoom_in.place(x=280, y=220, width=80, height=40)
-    btn_zoom_out.place(x=380, y=220, width=80, height=40)
+        # Resize captured frame maintaining portrait aspect
+        h, w, _ = frame.shape
+        preview_w = 240
+        preview_h = int(h / w * preview_w)
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_resized = cv2.resize(frame_rgb, (preview_w, preview_h))
+        img = Image.fromarray(frame_resized)
+        imgtk = ImageTk.PhotoImage(image=img)
+        label_preview.imgtk = imgtk
+        label_preview.configure(image=imgtk)
+        label_preview.place(x=40, y=20, width=preview_w, height=preview_h)
+
+        result_text = (f"Prediction:\n{predicted_class}\n\n"
+                       f"Weight:\n{random_weight:.1f} g\n\n"
+                       f"Confidence:\n{confidence:.2f}")
+        label_result.config(text=result_text, font=("Arial", 12), justify="center")
+        label_result.place(x=40, y=preview_h + 40, width=240, height=100)
+
+        btn_capture.place_forget()
+        btn_again.place(x=40, y=420, width=80, height=30)
+        btn_exit.place(x=140, y=420, width=80, height=30)
+        btn_zoom_in.place(x=230, y=420, width=60, height=30)
+        btn_zoom_out.place(x=230, y=460, width=60, height=30)
+
+    except Exception as e:
+        label_result.config(text=f"Error:\n{str(e)}", font=("Arial", 12), fg="red", justify="center")
+        label_result.place(x=20, y=20, width=280, height=100)
+        btn_capture.place(x=40, y=420, width=80, height=30)
+        btn_again.place_forget()
+        live_preview_running = True
+        update_preview()
 
 
 def reset_preview():
     global live_preview_running
     live_preview_running = True
-    label_result.config(text="")
+    label_result.config(text="", fg="black")
     btn_again.place_forget()
-    btn_capture.place(x=20, y=220, width=100, height=40)
-    btn_exit.place(x=140, y=220, width=100, height=40)
-    btn_zoom_in.place(x=280, y=220, width=80, height=40)
-    btn_zoom_out.place(x=380, y=220, width=80, height=40)
+    btn_capture.place(x=40, y=420, width=80, height=30)
+    btn_exit.place(x=140, y=420, width=80, height=30)
+    btn_zoom_in.place(x=230, y=420, width=60, height=30)
+    btn_zoom_out.place(x=230, y=460, width=60, height=30)
     update_preview()
 
 
@@ -147,27 +158,27 @@ def zoom_out():
 root = tk.Tk()
 root.title("Mango Grader")
 
-# Window width fixed at 480, height will dynamically adjust based on preview height plus controls (estimate 300)
-root.geometry("480x300")
+# Portrait window geometry
+root.geometry("320x500")
 
 label_preview = tk.Label(root, bg="black")
-label_preview.place(x=0, y=20, width=480, height=180)  # Initial size, will get updated by update_preview.
+label_preview.place(x=25, y=20, width=270, height=360)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
 
 btn_capture = tk.Button(root, text="Capture", command=capture_and_grade, font=("Arial", 12))
-btn_capture.place(x=20, y=220, width=100, height=40)
+btn_capture.place(x=40, y=420, width=80, height=30)
 
-btn_again = tk.Button(root, text="Capture", command=reset_preview, font=("Arial", 12))
+btn_again = tk.Button(root, text="Capture Again", command=reset_preview, font=("Arial", 12))
 
 btn_exit = tk.Button(root, text="Exit", command=root.quit, font=("Arial", 12))
-btn_exit.place(x=140, y=220, width=100, height=40)
+btn_exit.place(x=140, y=420, width=80, height=30)
 
 btn_zoom_in = tk.Button(root, text="➕ Zoom In", command=zoom_in, font=("Arial", 10))
-btn_zoom_in.place(x=280, y=220, width=80, height=40)
+btn_zoom_in.place(x=230, y=420, width=60, height=30)
 
 btn_zoom_out = tk.Button(root, text="➖ Zoom Out", command=zoom_out, font=("Arial", 10))
-btn_zoom_out.place(x=380, y=220, width=80, height=40)
+btn_zoom_out.place(x=230, y=460, width=60, height=30)
 
 live_preview_running = True
 update_preview()
