@@ -83,23 +83,19 @@ def capture_and_grade():
     live_preview_running = False
     try:
         ret, frame = cap.read()
-        print("Camera capture ret:", ret)
         if not ret or frame is None:
             raise RuntimeError("Failed to capture image from camera.")
 
         frame = zoom_frame(frame, zoom_factor)
         processed = preprocess_image(frame)
 
-        print("Running inference")
         interpreter.set_tensor(input_details[0]['index'], processed)
         interpreter.invoke()
         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
-        print("Predictions:", predictions)
 
         predicted_index = np.argmax(predictions)
         confidence = predictions[predicted_index]
         predicted_class = CLASS_NAMES[predicted_index]
-        print("Predicted:", predicted_class, "Confidence:", confidence)
 
         random_weight = get_random_weight(predicted_class)
 
@@ -118,15 +114,16 @@ def capture_and_grade():
         result_text = (f"Prediction:\n{predicted_class}\n\n"
                        f"Weight:\n{random_weight:.1f} g\n\n"
                        f"Confidence:\n{confidence:.2f}")
-        label_result.config(text=result_text, font=("Arial", 12), justify="center")
-        label_result.place(x=40, y=preview_h + 40, width=240, height=100)
+        label_result.config(text=result_text, font=("Arial", 12), justify="center", fg="black")
+        label_result.place(x=40, y=400, width=240, height=100)
+        label_result.update()
 
         btn_capture.pack_forget()
         btn_again.pack(side="left", padx=10)
     except Exception as e:
-        print("Error:", e)
         label_result.config(text=f"Error:\n{str(e)}", font=("Arial", 12), fg="red", justify="center")
         label_result.place(x=20, y=20, width=280, height=100)
+        label_result.update()
         btn_capture.pack(side="left", padx=10)
         btn_again.pack_forget()
         live_preview_running = True
@@ -137,6 +134,7 @@ def reset_preview():
     global live_preview_running
     live_preview_running = True
     label_result.config(text="", fg="black")
+    label_result.place_forget()
     btn_again.pack_forget()
     btn_capture.pack(side="left", padx=10)
     update_preview()
@@ -165,7 +163,10 @@ label_preview = tk.Label(root, bg="black")
 label_preview.place(x=25, y=20, width=270, height=360)
 
 label_result = tk.Label(root, text="", font=("Arial", 12), justify="center")
-label_result.place(x=40, y=400, width=240, height=80)
+
+# Pre-place label_result but hide initially
+label_result.place(x=40, y=400, width=240, height=100)
+label_result.place_forget()
 
 # Button frame
 button_frame = tk.Frame(root)
@@ -175,7 +176,7 @@ btn_capture = tk.Button(button_frame, text="Capture", command=capture_and_grade,
 btn_capture.pack(side="left", padx=10)
 
 btn_again = tk.Button(button_frame, text="Capture Again", command=reset_preview, font=("Arial", 12))
-# Initially not packed; will be packed on capture
+# btn_again not packed initially
 
 btn_exit = tk.Button(button_frame, text="Exit", command=root.quit, font=("Arial", 12))
 btn_exit.pack(side="left", padx=10)
